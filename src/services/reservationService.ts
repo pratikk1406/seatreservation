@@ -8,6 +8,7 @@ import {
   reservationsCancelledTotal,
   seatsAvailableGauge,
 } from '../metrics.js';
+import { isValidUuid } from '../utils.js';
 
 export interface ReserveSeatInput {
   showId: string;
@@ -31,6 +32,13 @@ export function computeRequestHash(showId: string, seats: string[]): string {
 
 export async function reserveSeats(input: ReserveSeatInput): Promise<ReservationResult> {
   const { showId, userId, seats, idempotencyKey } = input;
+
+  if (!isValidUuid(showId)) {
+    return {
+      statusCode: 404,
+      body: { error: 'not_found', message: 'Show not found' },
+    };
+  }
 
   if (!idempotencyKey || typeof idempotencyKey !== 'string' || idempotencyKey.trim() === '') {
     reservationsDeclinedTotal.inc({ reason: 'missing_idempotency_key', show_id: showId });
@@ -289,6 +297,13 @@ export async function reserveSeats(input: ReserveSeatInput): Promise<Reservation
 }
 
 export async function cancelReservation(reservationId: string, userId: string): Promise<ReservationResult> {
+  if (!isValidUuid(reservationId)) {
+    return {
+      statusCode: 404,
+      body: { error: 'not_found', message: 'Reservation not found' },
+    };
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');

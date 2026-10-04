@@ -1,4 +1,4 @@
-import fastify, { FastifyInstance } from 'fastify';
+import fastify from 'fastify';
 import cors from '@fastify/cors';
 import crypto from 'crypto';
 import { logger } from './logger.js';
@@ -8,9 +8,10 @@ import { metricsRoutes } from './routes/metrics.js';
 import { showRoutes } from './routes/shows.js';
 import { reservationRoutes } from './routes/reservations.js';
 
-export function buildApp(): FastifyInstance {
-  const app: FastifyInstance = fastify({
+export function buildApp() {
+  const app = fastify({
     loggerInstance: logger as any,
+    disableRequestLogging: true,
     genReqId: (req) => {
       const existing = req.headers['x-request-id'];
       if (typeof existing === 'string' && existing.trim()) {
@@ -18,7 +19,6 @@ export function buildApp(): FastifyInstance {
       }
       return crypto.randomUUID();
     },
-    disableRequestLogging: true, // We implement structured access logging via hooks
   });
 
   // Enable CORS

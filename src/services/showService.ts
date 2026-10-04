@@ -1,6 +1,7 @@
 import { pool } from '../db.js';
 import { logger } from '../logger.js';
 import { seatsAvailableGauge } from '../metrics.js';
+import { isValidUuid } from '../utils.js';
 
 export interface CreateShowInput {
   name: string;
@@ -65,7 +66,6 @@ export async function createShow(input: CreateShowInput) {
     const show = showRes.rows[0];
 
     // Batch insert seats
-    // Unnesting two arrays or multiple values
     const query = `
       INSERT INTO seats (show_id, seat_number, status, version)
       SELECT $1, unnest($2::text[]), 'available', 1
@@ -93,6 +93,10 @@ export async function createShow(input: CreateShowInput) {
 }
 
 export async function getShowState(showId: string): Promise<ShowStateResponse | null> {
+  if (!isValidUuid(showId)) {
+    return null;
+  }
+
   const showRes = await pool.query(
     `SELECT id, name, price_paise, per_user_limit, total_seats 
      FROM shows WHERE id = $1`,
