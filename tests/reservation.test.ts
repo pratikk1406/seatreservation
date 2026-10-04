@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { runMigrations, pool } from '../src/db.js';
 import { FastifyInstance } from 'fastify';
@@ -11,6 +11,11 @@ describe('Seat Reservation Service - Concurrency & Invariant Suite', () => {
     await runMigrations();
     app = buildApp();
     await app.ready();
+  });
+
+  beforeEach(async () => {
+    // Clean database tables to guarantee hermetic test isolation
+    await pool.query('TRUNCATE shows, seats, reservations, reservation_seats, idempotency_keys CASCADE');
   });
 
   afterAll(async () => {
@@ -124,7 +129,7 @@ describe('Seat Reservation Service - Concurrency & Invariant Suite', () => {
       },
     });
     const show = JSON.parse(showRes.payload);
-    const key = 'idem_key_unique_999';
+    const key = `idem_key_${Date.now()}`;
 
     // First request
     const firstRes = await app.inject({
